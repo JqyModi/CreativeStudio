@@ -5,7 +5,7 @@ struct ResultsView: View {
     @EnvironmentObject var appCoordinator: AppCoordinator
     
     var body: some View {
-        NavigationStack {
+//        NavigationStack {
             VStack {
                 // Tab view for different result types
                 TabView {
@@ -94,7 +94,7 @@ struct ResultsView: View {
             }
             .navigationTitle("生成结果")
             .navigationBarTitleDisplayMode(.inline)
-        }
+//        }
     }
     
     private var actionButtonsView: some View {

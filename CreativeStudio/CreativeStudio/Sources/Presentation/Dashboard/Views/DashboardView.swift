@@ -5,7 +5,7 @@ struct DashboardView: View {
     @EnvironmentObject var appCoordinator: AppCoordinator
     
     var body: some View {
-        NavigationStack {
+//        NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
                     // Stats grid
@@ -23,7 +23,7 @@ struct DashboardView: View {
             .onAppear {
                 viewModel.loadDashboardData()
             }
-        }
+//        }
     }
     
     private var statsGridView: some View {

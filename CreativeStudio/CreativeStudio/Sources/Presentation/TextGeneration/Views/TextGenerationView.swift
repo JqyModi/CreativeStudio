@@ -6,7 +6,7 @@ struct TextGenerationView: View {
     @FocusState private var isInputFocused: Bool
     
     var body: some View {
-        NavigationStack {
+//        NavigationStack {
             VStack(spacing: 16) {
                 // Input area
                 inputAreaView
@@ -24,7 +24,7 @@ struct TextGenerationView: View {
             .padding()
             .navigationTitle("文字生成")
             .navigationBarTitleDisplayMode(.inline)
-        }
+//        }
     }
     
     private var inputAreaView: some View {
@@ -54,7 +54,8 @@ struct TextGenerationView: View {
                 Text("最近使用")
                     .font(.headline)
                 
-                LazyHStack {
+//                LazyHStack {
+                HStack {
                     ForEach(viewModel.recentPrompts, id: \.self) { prompt in
                         Button(prompt) {
                             viewModel.inputText = prompt

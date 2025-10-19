@@ -6,7 +6,7 @@ struct ImageUploadView: View {
     @EnvironmentObject var appCoordinator: AppCoordinator
     
     var body: some View {
-        NavigationStack {
+//        NavigationStack {
             VStack(spacing: 16) {
                 // Upload area
                 uploadAreaView
@@ -30,7 +30,7 @@ struct ImageUploadView: View {
             .padding()
             .navigationTitle("图像上传")
             .navigationBarTitleDisplayMode(.inline)
-        }
+//        }
     }
     
     private var uploadAreaView: some View {
