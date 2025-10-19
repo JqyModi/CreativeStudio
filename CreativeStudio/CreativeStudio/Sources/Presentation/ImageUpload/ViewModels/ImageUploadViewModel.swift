@@ -1,17 +1,24 @@
 import SwiftUI
+import PhotosUI
 import UniformTypeIdentifiers
 
 final class ImageUploadViewModel: ObservableObject {
     @Published var selectedImages: [Data] = []
     @Published var descriptionText: String = ""
     @Published var selectedStyle: ArtStyle = .defaultStyle
+    @Published var styleIntensity: Double = 0.7
     @Published var isGenerating: Bool = false
-    @Published var isDragOver = false
-    @Published var showImagePicker = false
+    @Published var isDragOver: Bool = false
+    @Published var progress: Double = 0.0
+    @Published var estimatedCompletionTime: TimeInterval = 0
+    @Published var enableReferenceMixing: Bool = false
+    @Published var colorSaturation: Double = 1.0
+    @Published var descriptionSuggestions: [String] = []
     
     private let imageGenerationUseCase: ImageGenerationUseCase
     private let repository: GenerationRepository
-
+    private var progressTimer: Timer?
+    
     init(
         imageGenerationUseCase: ImageGenerationUseCase = ImageGenerationUseCase(
             service: ImagePlaygroundService(),
@@ -21,109 +28,205 @@ final class ImageUploadViewModel: ObservableObject {
     ) {
         self.imageGenerationUseCase = imageGenerationUseCase
         self.repository = repository
+        
+        // Generate initial description suggestions
+        self.descriptionSuggestions = [
+            "风景照片处理",
+            "人物肖像美化",
+            "产品展示图",
+            "艺术风格转换",
+            "复古照片修复"
+        ]
     }
-
-    func handleDrop(providers: [NSItemProvider]) -> Bool {
-        for provider in providers {
-            if provider.canLoadObject(ofClass: URL.self) {
-                _ = provider.loadObject(ofClass: URL.self) { [weak self] url, _ in
-                    guard let self = self, let url = url else { return }
-                    
-                    // Check if it's an image
-                    guard url.pathExtension.lowercased().containsAny(of: ["jpg", "jpeg", "png"]) else { return }
-                    
-                    // Check file size
-                    do {
-                        let fileSize = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-                        if fileSize > 20_000_000 { // 20MB limit
-                            print("File too large: $fileSize) bytes")
-                            return
-                        }
-                    } catch {
-                        print("Error getting file size: $error)")
-                        return
-                    }
-                    
-                    // Read image data
-                    do {
-                        let imageData = try Data(contentsOf: url)
-                        DispatchQueue.main.async {
-                            self.selectedImages.append(imageData)
-                            if self.selectedImages.count > 5 {
-                                self.selectedImages.removeFirst()
-                            }
-                        }
-                    } catch {
-                        print("Error reading file: $error)")
-                    }
+    
+    func loadImage(from item: PhotosPickerItem?) async {
+        guard let item = item else { return }
+        
+        do {
+            if let imageData = try await item.loadTransferable(type: Data.self) {
+                // Validate image size and format
+                guard validateImageSize(imageData) else {
+                    print("Image size exceeds limit")
+                    return
+                }
+                
+                guard validateImageFormat(imageData) else {
+                    print("Invalid image format")
+                    return
+                }
+                
+                // Check file count limit
+                guard selectedImages.count < 5 else {
+                    print("Maximum file count exceeded")
+                    return
+                }
+                
+                DispatchQueue.main.async { [weak self] in
+                    self?.selectedImages.append(imageData)
                 }
             }
+        } catch {
+            print("Error loading image: $error)")
         }
-        return true
     }
-
+    
     func removeImage(at index: Int) {
         guard index < selectedImages.count else { return }
         selectedImages.remove(at: index)
     }
-
+    
+    func clearSelectedImages() {
+        selectedImages.removeAll()
+    }
+    
     func generateContent() async {
         guard !selectedImages.isEmpty, !isGenerating else { return }
         
         isGenerating = true
+        progress = 0.0
+        estimatedCompletionTime = Double(selectedImages.count) * Double.random(in: 10...30)
         
-        // Convert Data to ImageFileProtocol objects for the use case
-        var imageFiles: [any ImageFileProtocol] = []
-        for imageData in selectedImages {
-            if let uiImage = UIImage(data: imageData) {
-                let file = UploadedImageFile(
-                    uiImage: uiImage,
-                    size: imageData.count,
-                    format: getImageFormat(from: imageData)
-                )
-                imageFiles.append(file)
-            }
-        }
+        // Start progress simulation
+        startProgressSimulation()
         
         do {
-            let results = try await imageGenerationUseCase.execute(
-                files: imageFiles,
-                parameters: ImageGenerationParams(
-                    width: 1024,
-                    height: 1024,
-                    style: selectedStyle
-                )
+            // Create image files from data
+            var imageFiles: [any ImageFileProtocol] = []
+            for imageData in selectedImages {
+                if let uiImage = UIImage(data: imageData) {
+                    let imageFile = UploadedImageFile(uiImage: uiImage, size: imageData.count, format: .jpg)
+                    imageFiles.append(imageFile)
+                }
+            }
+            
+            // Generate parameters
+            let params = ImageGenerationParams(
+                width: 1024,
+                height: 1024,
+                style: selectedStyle
             )
             
-            DispatchQueue.main.async {
-                self.isGenerating = false
-                // Process results as needed
-                print("Generated $results.count) images")
+            let results = try await imageGenerationUseCase.execute(
+                files: imageFiles,
+                parameters: params
+            )
+            
+            // Stop progress simulation
+            stopProgressSimulation()
+            
+            DispatchQueue.main.async { [weak self] in
+                self?.isGenerating = false
+                self?.progress = 1.0
+                self?.estimatedCompletionTime = 0
+                
+                // Increment usage quota
+                self?.incrementUsageQuota()
+                
+                print("Generated \(results.count) images")
             }
         } catch {
-            DispatchQueue.main.async {
-                self.isGenerating = false
+            DispatchQueue.main.async { [weak self] in
+                self?.isGenerating = false
+                self?.progress = 0.0
+                self?.estimatedCompletionTime = 0
                 print("Generation error: $error)")
             }
         }
     }
     
-    private func getImageFormat(from data: Data) -> ImageFormat {
-        // Basic format detection based on magic numbers
-        if data.starts(with: [0xFF, 0xD8, 0xFF]) {
-            return .jpg
-        } else if data.starts(with: [0x89, 0x50, 0x4E, 0x47]) {
-            return .png
-        } else {
-            return .jpg // default
+    func cancelGeneration() {
+        isGenerating = false
+        stopProgressSimulation()
+    }
+    
+    func handleDrop(providers: [NSItemProvider]) -> Bool {
+        // Handle file drops
+        for provider in providers {
+            provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { (item, error) in
+                if let url = item as? URL {
+                    self.processDroppedFile(url: url)
+                }
+            }
+        }
+        return true
+    }
+    
+    private func processDroppedFile(url: URL) {
+        do {
+            let imageData = try Data(contentsOf: url)
+            
+            // Validate image
+            guard validateImageSize(imageData) else {
+                print("Dropped image size exceeds limit")
+                return
+            }
+            
+            guard validateImageFormat(imageData) else {
+                print("Dropped image format not supported")
+                return
+            }
+            
+            // Check file count limit
+            guard selectedImages.count < 5 else {
+                print("Maximum file count exceeded")
+                return
+            }
+            
+            DispatchQueue.main.async { [weak self] in
+                self?.selectedImages.append(imageData)
+            }
+        } catch {
+            print("Error processing dropped file: $error)")
         }
     }
-}
-
-// Extension for String to support "containsAny" method
-extension String {
-    func containsAny(of strings: [String]) -> Bool {
-        return strings.contains { self.lowercased().contains($0.lowercased()) }
+    
+    private func validateImageSize(_ imageData: Data) -> Bool {
+        return imageData.count <= 20_000_000 // 20MB limit
+    }
+    
+    private func validateImageFormat(_ imageData: Data) -> Bool {
+        // Simple validation based on file signature
+        guard imageData.count >= 4 else { return false }
+        
+        let bytes = [UInt8](imageData.prefix(4))
+        
+        // JPEG signature: FF D8 FF
+        if bytes.starts(with: [0xFF, 0xD8, 0xFF]) {
+            return true
+        }
+        
+        // PNG signature: 89 50 4E 47
+        if bytes == [0x89, 0x50, 0x4E, 0x47] {
+            return true
+        }
+        
+        return false
+    }
+    
+    private func startProgressSimulation() {
+        progressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                // Simulate progress with acceleration/deceleration
+                let randomIncrement = Double.random(in: 0.01...0.05)
+                self.progress = min(0.95, self.progress + randomIncrement)
+                
+                // Decrease estimated time
+                if self.estimatedCompletionTime > 0 {
+                    self.estimatedCompletionTime = max(0, self.estimatedCompletionTime - 0.1)
+                }
+            }
+        }
+    }
+    
+    private func stopProgressSimulation() {
+        progressTimer?.invalidate()
+        progressTimer = nil
+    }
+    
+    private func incrementUsageQuota() {
+        NotificationCenter.default.post(name: .usageQuotaIncremented, object: nil)
     }
 }
 
@@ -139,4 +242,3 @@ class UploadedImageFile: ImageFileProtocol {
         self.format = format
     }
 }
-

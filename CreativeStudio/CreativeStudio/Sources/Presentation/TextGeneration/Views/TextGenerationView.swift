@@ -8,13 +8,13 @@ struct TextGenerationView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 16) {
-                // Input area
+                // Input area with smart suggestions
                 inputAreaView
                 
-                // Generation controls
+                // Generation controls with advanced parameters
                 generationControlsView
                 
-                // Progress indicator
+                // Progress indicator and status feedback
                 if viewModel.isGenerating {
                     progressIndicatorView
                 }
@@ -24,6 +24,17 @@ struct TextGenerationView: View {
             .padding()
             .navigationTitle("文字生成")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .keyboard) {
+                    HStack {
+                        Spacer()
+                        
+                        Button("完成") {
+                            isInputFocused = false
+                        }
+                    }
+                }
+            }
         }
     }
     
@@ -49,19 +60,41 @@ struct TextGenerationView: View {
                 )
                 .focused($isInputFocused)
             
-            // Quick insert buttons for recent prompts
+            // Smart suggestions based on input
+            if !viewModel.smartSuggestions.isEmpty {
+                Text("智能建议")
+                    .font(.headline)
+                
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(viewModel.smartSuggestions, id: \.self) { suggestion in
+                            Button(suggestion) {
+                                viewModel.inputText = suggestion
+                            }
+                            .buttonStyle(.bordered)
+                            .foregroundColor(.blue)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+            
+            // Recent prompts
             if !viewModel.recentPrompts.isEmpty {
                 Text("最近使用")
                     .font(.headline)
                 
-                LazyHStack {
-                    ForEach(viewModel.recentPrompts, id: \.self) { prompt in
-                        Button(prompt) {
-                            viewModel.inputText = prompt
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(viewModel.recentPrompts, id: \.self) { prompt in
+                            Button(prompt) {
+                                viewModel.inputText = prompt
+                            }
+                            .buttonStyle(.bordered)
+                            .foregroundColor(.blue)
                         }
-                        .buttonStyle(.bordered)
-                        .foregroundColor(.blue)
                     }
+                    .padding(.vertical, 4)
                 }
             }
         }
@@ -69,6 +102,7 @@ struct TextGenerationView: View {
     
     private var generationControlsView: some View {
         VStack(spacing: 12) {
+            // Main generate button with progress estimation
             Button(action: {
                 Task {
                     await viewModel.generateContent()
@@ -89,43 +123,47 @@ struct TextGenerationView: View {
             }
             .disabled(viewModel.inputText.isEmpty || viewModel.isGenerating)
             
-            // Advanced parameters
-            disclosureGroup {
-                ParameterSliderView(
-                    title: "创意度", 
-                    value: Binding(
-                        get: { viewModel.parameters.temperature },
-                        set: { viewModel.parameters.temperature = $0 }
-                    ),
-                    range: 0.1...1.0,
-                    format: .number.precision(.fractionLength(1))
-                )
-                
-                ParameterSliderView(
-                    title: "最大长度", 
-                    value: Binding(
-                        get: { Double(viewModel.parameters.maxTokens) },
-                        set: { viewModel.parameters.maxTokens = Int($0) }
-                    ),
-                    range: 100...1000,
-                    format: .number
-                )
-                
-                Picker("风格", selection: $viewModel.parameters.style) {
-                    ForEach(TextStyle.allCases, id: \.self) { style in
-                        Text(getStyleName(for: style)).tag(style)
+            // Advanced parameters in collapsible section
+            DisclosureGroup("高级参数") {
+                VStack(spacing: 16) {
+                    // Temperature slider
+                    ParameterSliderView(
+                        title: "创意度", 
+                        value: $viewModel.parameters.temperature,
+                        range: 0.1...1.0,
+                        format: .number.precision(.fractionLength(1))
+                    )
+                    
+                    // Max tokens slider
+                    ParameterSliderView(
+                        title: "最大长度", 
+                        value: Binding(
+                            get: { Double(viewModel.parameters.maxTokens) },
+                            set: { viewModel.parameters.maxTokens = Int($0) }
+                        ),
+                        range: 100...1000,
+                        format: .number
+                    )
+                    
+                    // Style picker
+                    Picker("风格", selection: $viewModel.parameters.style) {
+                        ForEach(TextStyle.allCases, id: \.self) { style in
+                            Text(getStyleName(for: style)).tag(style)
+                        }
                     }
+                    .pickerStyle(.segmented)
+                    
+                    // Language picker
+                    Picker("语言", selection: $viewModel.selectedLanguage) {
+                        ForEach(Language.allCases, id: \.self) { language in
+                            Text(getLanguageName(for: language)).tag(language)
+                        }
+                    }
+                    .pickerStyle(.segmented)
                 }
-                .pickerStyle(.segmented)
+                .padding(.vertical, 8)
             }
         }
-    }
-    
-    private func disclosureGroup<Content: View>(@ViewBuilder content: @escaping () -> Content) -> some View {
-        DisclosureGroup("高级参数", content: content)
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(8)
     }
     
     private var progressIndicatorView: some View {
@@ -133,11 +171,20 @@ struct TextGenerationView: View {
             ProgressView(value: viewModel.progress, total: 1.0)
                 .progressViewStyle(CircularProgressViewStyle())
             
-            Text("处理中... ($Int(viewModel.progress * 100))%")
+            Text("处理中... \(Int(viewModel.progress * 100))%")
                 .font(.caption)
                 .foregroundColor(.secondary)
+            
+            // Estimated completion time
+            if viewModel.estimatedCompletionTime > 0 {
+                Text("预计完成时间: \(viewModel.estimatedCompletionTime, specifier: "%.0f")秒")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
         }
         .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
     }
     
     private func getStyleName(for style: TextStyle) -> String {
@@ -147,6 +194,14 @@ struct TextGenerationView: View {
         case .formal: return "正式"
         case .casual: return "随意"
         case .professional: return "专业"
+        }
+    }
+    
+    private func getLanguageName(for language: Language) -> String {
+        switch language {
+        case .chinese: return "中文"
+        case .english: return "英文"
+        case .japanese: return "日文"
         }
     }
 }

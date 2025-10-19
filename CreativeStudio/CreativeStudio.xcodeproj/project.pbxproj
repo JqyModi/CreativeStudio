@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C54D4F9C2EA4BB38004411B4 /* AVKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C54D4F9B2EA4BB38004411B4 /* AVKit.framework */; };
 		C59FCB522E9BE777006E4CD1 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C59FCB512E9BE777006E4CD1 /* UIKit.framework */; platformFilters = (ios, xros, ); };
 /* End PBXBuildFile section */
 
@@ -28,6 +29,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C54D4F9B2EA4BB38004411B4 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk/System/Library/Frameworks/AVKit.framework; sourceTree = DEVELOPER_DIR; };
 		C59FCA6E2E96119B006E4CD1 /* CreativeStudio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CreativeStudio.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C59FCA7C2E9611A2006E4CD1 /* CreativeStudioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CreativeStudioTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C59FCA862E9611A2006E4CD1 /* CreativeStudioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CreativeStudioUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -57,6 +59,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C54D4F9C2EA4BB38004411B4 /* AVKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -102,6 +105,7 @@
 		C59FCB502E9BE776006E4CD1 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				C54D4F9B2EA4BB38004411B4 /* AVKit.framework */,
 				C59FCB512E9BE777006E4CD1 /* UIKit.framework */,
 			);
 			name = Frameworks;
