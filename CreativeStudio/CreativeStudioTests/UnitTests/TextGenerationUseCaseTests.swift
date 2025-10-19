@@ -3,13 +3,13 @@ import XCTest
 
 class TextGenerationUseCaseTests: XCTestCase {
     private var mockService: MockFoundationModelsService!
-    private var mockRepository: MockGenerationRepository!
+    private var mockRepository: TextGenerationMockRepository!
     private var useCase: TextGenerationUseCase!
 
     override func setUp() {
         super.setUp()
         mockService = MockFoundationModelsService()
-        mockRepository = MockGenerationRepository()
+        mockRepository = TextGenerationMockRepository()
         useCase = TextGenerationUseCase(service: mockService, repository: mockRepository)
     }
 
@@ -51,11 +51,11 @@ class TextGenerationUseCaseTests: XCTestCase {
     }
 }
 
-class MockFoundationModelsService {
+class MockFoundationModelsService: FoundationModelsService {
     var stubbedGenerateTextResult: String?
     var stubbedGenerateTextError: Error?
 
-    func generateText(from prompt: String, style: TextStyle) async throws -> String {
+    override func generateText(from prompt: String, temperature: Double, maxTokens: Int, style: TextStyle) async throws -> String {
         if let error = stubbedGenerateTextError {
             throw error
         }
@@ -63,12 +63,28 @@ class MockFoundationModelsService {
     }
 }
 
-class MockGenerationRepository {
+class TextGenerationMockRepository: GenerationRepository {
     var saveCalled = false
     var savedResult: GenerationResult?
+
+    func saveProject(_ project: Project) async throws {
+        // Mock implementation
+    }
+
+    func fetchProjects() async throws -> [Project] {
+        return []
+    }
 
     func saveGenerationResult(_ result: GenerationResult) async throws {
         saveCalled = true
         savedResult = result
+    }
+    
+    func generateText(prompt: String, parameters: GenerationParams) async throws -> TextResult {
+        return TextResult(text: "", tokensUsed: 0)
+    }
+    
+    func generateImage(prompt: String, parameters: ImageGenerationParams) async throws -> ImageResult {
+        return ImageResult(image: Data(), prompt: "")
     }
 }

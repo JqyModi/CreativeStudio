@@ -3,7 +3,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class UserQuota {
+final class UserQuota: Codable {
     var dailyLimit: Int
     var usedToday: Int
     var resetTime: Date
@@ -28,5 +28,24 @@ final class UserQuota {
     func incrementUsage() {
         guard canGenerate() else { return }
         usedToday += 1
+    }
+    
+    // Codable implementation
+    enum CodingKeys: CodingKey {
+        case dailyLimit, usedToday, resetTime
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.dailyLimit = try container.decode(Int.self, forKey: .dailyLimit)
+        self.usedToday = try container.decode(Int.self, forKey: .usedToday)
+        self.resetTime = try container.decode(Date.self, forKey: .resetTime)
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(dailyLimit, forKey: .dailyLimit)
+        try container.encode(usedToday, forKey: .usedToday)
+        try container.encode(resetTime, forKey: .resetTime)
     }
 }

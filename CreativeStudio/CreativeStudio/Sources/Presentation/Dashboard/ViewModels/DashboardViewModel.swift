@@ -1,22 +1,32 @@
 // CreativeStudio/Sources/Presentation/Dashboard/ViewModels/DashboardViewModel.swift
 import SwiftUI
 import Combine
-// import Domain (removed - files are in same module)
-// import Data (removed - files are in same module)
 
 final class DashboardViewModel: ObservableObject {
-    @Published var stats: DashboardStats = DashboardStats(creationCount: 0, inProgressCount: 0, completionRate: 0, resetTime: Date())
+    @Published var stats: DashboardStats = DashboardStats(creationCount: 0, inProgressCount: 0, completionRate: 0)
     @Published var projects: [Project] = []
     @Published var userQuota: UserQuota
     
+    private let textGenerationUseCase: TextGenerationUseCase
+    private let imageGenerationUseCase: ImageGenerationUseCase
     private let repository: GenerationRepository
     private let userDefaultsStorage: UserDefaultsStorage
     private var cancellables = Set<AnyCancellable>()
 
     init(
+        textGenerationUseCase: TextGenerationUseCase = TextGenerationUseCase(
+            service: FoundationModelsService(),
+            repository: SwiftDataStorage()
+        ),
+        imageGenerationUseCase: ImageGenerationUseCase = ImageGenerationUseCase(
+            service: ImagePlaygroundService(),
+            repository: SwiftDataStorage()
+        ),
         repository: GenerationRepository = SwiftDataStorage(),
         userDefaultsStorage: UserDefaultsStorage = .init()
     ) {
+        self.textGenerationUseCase = textGenerationUseCase
+        self.imageGenerationUseCase = imageGenerationUseCase
         self.repository = repository
         self.userDefaultsStorage = userDefaultsStorage
         self.userQuota = userDefaultsStorage.loadUserQuota() ?? 
@@ -59,13 +69,12 @@ final class DashboardViewModel: ObservableObject {
     private func calculateStats(from projects: [Project]) -> DashboardStats {
         let total = projects.count
         let inProgress = projects.filter { $0.status == .inProgress }.count
-        let completionRate = total > 0 ? Double(inProgress) / Double(total) : 0
+        let completionRate = total > 0 ? Double(total - inProgress) / Double(total) : 0
         
         return DashboardStats(
             creationCount: total,
             inProgressCount: inProgress,
-            completionRate: completionRate,
-            resetTime: userQuota.resetTime
+            completionRate: completionRate
         )
     }
 }
@@ -74,7 +83,6 @@ struct DashboardStats {
     let creationCount: Int
     let inProgressCount: Int
     let completionRate: Double
-    let resetTime: Date
 }
 
 enum SortCriterion {

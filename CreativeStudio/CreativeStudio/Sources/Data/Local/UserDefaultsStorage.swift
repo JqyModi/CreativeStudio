@@ -1,5 +1,4 @@
 import Foundation
-// import Domain (removed - same module)
 
 final class UserDefaultsStorage {
     private let userDefaults = UserDefaults.standard
@@ -28,5 +27,3 @@ final class UserDefaultsStorage {
         }
     }
 }
-
-// Moved Codable conformance to AppCoordinator.swift

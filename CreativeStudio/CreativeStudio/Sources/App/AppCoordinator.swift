@@ -1,16 +1,17 @@
 // CreativeStudio/Sources/App/AppCoordinator.swift
 import SwiftUI
 import Combine
-//import UIKit
-// import Domain (removed - files are in same module)
+import UIKit
 
 final class AppCoordinator: ObservableObject {
     @Published var userQuota: UserQuota
     @Published var currentProject: Project?
     @Published var navigationStack: [NavigationDestination] = [.dashboard]
     
-    private let userDefaultsStorage: UserDefaultsStorage
     private var cancellables = Set<AnyCancellable>()
+    
+    // Make UserDefaultsStorage available to other parts of the app
+    let userDefaultsStorage: UserDefaultsStorage
 
     init(userDefaultsStorage: UserDefaultsStorage = .init()) {
         self.userDefaultsStorage = userDefaultsStorage
@@ -84,12 +85,12 @@ final class AppCoordinator: ObservableObject {
     }
 
     @objc private func handleVoiceOverStatusChanged() {
-        print("VoiceOver status changed: $UIAccessibility.isVoiceOverRunning)")
+        print("VoiceOver status changed: \(UIAccessibility.isVoiceOverRunning)")
         // Update UI accessibility elements
     }
 
     @objc private func handleSwitchControlStatusChanged() {
-        print("SwitchControl status changed: $UIAccessibility.isSwitchControlRunning)")
+        print("SwitchControl status changed: \(UIAccessibility.isSwitchControlRunning)")
         // Adjust focus management
     }
 }

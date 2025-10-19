@@ -33,7 +33,7 @@ struct TextGenerationUseCase {
             )
             
             try await repository.saveGenerationResult(result)
-            return TextResult(text: generatedText, tokensUsed: 0)
+            return TextResult(text: generatedText, tokensUsed: generatedText.count)
         } catch {
             throw TextGenerationError.serviceUnavailable
         }

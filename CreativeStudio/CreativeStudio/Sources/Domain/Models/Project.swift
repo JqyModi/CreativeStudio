@@ -1,10 +1,21 @@
 import Foundation
+import SwiftData
 
-struct Project: Identifiable, Codable {
-    let id: UUID
-    let name: String
-    let createdAt: Date
-    let status: ProjectStatus
+@Model
+final class Project {
+    @Attribute(.unique) var id: UUID
+    var name: String
+    var createdAt: Date
+    var status: ProjectStatus
+    var generationResults: [GenerationResult]
+    
+    init(id: UUID = UUID(), name: String, createdAt: Date = Date(), status: ProjectStatus = .inProgress, generationResults: [GenerationResult] = []) {
+        self.id = id
+        self.name = name
+        self.createdAt = createdAt
+        self.status = status
+        self.generationResults = generationResults
+    }
 }
 
 enum ProjectStatus: String, Codable {

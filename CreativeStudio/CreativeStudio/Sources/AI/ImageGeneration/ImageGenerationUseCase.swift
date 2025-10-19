@@ -8,15 +8,11 @@ enum ImageGenerationError: Error {
     case tooManyFiles
 }
 
-// Removed - use ImageResult from GenerationRepository.swift
-
-// Use ImageGenerationParams from GenerationRepository.swift
-
 struct ImageGenerationUseCase {
     let service: ImagePlaygroundService
     let repository: GenerationRepository
 
-    func execute(files: [ImageFile], parameters: ImageGenerationParams) async throws -> ImageResult {
+    func execute(files: [any ImageFileProtocol], parameters: ImageGenerationParams) async throws -> [ImageResult] {
         // Validate input constraints
         guard files.count <= 5 else {
             throw ImageGenerationError.tooManyFiles
@@ -41,25 +37,23 @@ struct ImageGenerationUseCase {
             generatedImages.append(image)
         }
 
+        // Convert to data and create results
+        var results = [ImageResult]()
+        for image in generatedImages {
+            if let imageData = image.jpegData(compressionQuality: 0.9) {
+                let result = ImageResult(image: imageData, prompt: "Image Upload")
+                results.append(result)
+            }
+        }
+
         // Save to repository
-        let result = GenerationResult(
-            id: UUID(),
+        let generationResult = GenerationResult(
             prompt: "Image Upload",
             texts: [],
-            createdAt: Date()
+            images: generatedImages.compactMap { $0.jpegData(compressionQuality: 0.9) }
         )
-        try await repository.saveGenerationResult(result)
+        try await repository.saveGenerationResult(generationResult)
 
-        return ImageResult(image: generatedImages.first?.jpegData(compressionQuality: 0.9) ?? Data(), prompt: "Image Upload")
+        return results
     }
-}
-
-struct ImageFile {
-    let uiImage: UIImage
-    let size: Int
-    let format: ImageFormat
-}
-
-enum ImageFormat {
-    case jpg, png, gif
 }

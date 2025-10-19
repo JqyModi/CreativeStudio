@@ -1,6 +1,8 @@
 import Foundation
 
 // Shared types used across multiple modules
-enum ArtStyle {
-    case defaultStyle, artistic, realistic
+enum ArtStyle: String, CaseIterable {
+    case defaultStyle = "default"
+    case artistic = "artistic"
+    case realistic = "realistic"
 }
