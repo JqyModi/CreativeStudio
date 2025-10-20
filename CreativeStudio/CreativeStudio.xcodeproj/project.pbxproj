@@ -40,16 +40,6 @@
 			path = CreativeStudio;
 			sourceTree = "<group>";
 		};
-		C59FCA7F2E9611A2006E4CD1 /* CreativeStudioTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = CreativeStudioTests;
-			sourceTree = "<group>";
-		};
-		C59FCA892E9611A2006E4CD1 /* CreativeStudioUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = CreativeStudioUITests;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,8 +72,6 @@
 			isa = PBXGroup;
 			children = (
 				C59FCA702E96119B006E4CD1 /* CreativeStudio */,
-				C59FCA7F2E9611A2006E4CD1 /* CreativeStudioTests */,
-				C59FCA892E9611A2006E4CD1 /* CreativeStudioUITests */,
 				C59FCB502E9BE776006E4CD1 /* Frameworks */,
 				C59FCA6F2E96119B006E4CD1 /* Products */,
 			);
@@ -145,9 +133,6 @@
 			dependencies = (
 				C59FCA7E2E9611A2006E4CD1 /* PBXTargetDependency */,
 			);
-			fileSystemSynchronizedGroups = (
-				C59FCA7F2E9611A2006E4CD1 /* CreativeStudioTests */,
-			);
 			name = CreativeStudioTests;
 			packageProductDependencies = (
 			);
@@ -167,9 +152,6 @@
 			);
 			dependencies = (
 				C59FCA882E9611A2006E4CD1 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				C59FCA892E9611A2006E4CD1 /* CreativeStudioUITests */,
 			);
 			name = CreativeStudioUITests;
 			packageProductDependencies = (

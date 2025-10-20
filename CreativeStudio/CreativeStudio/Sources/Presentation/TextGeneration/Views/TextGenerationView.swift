@@ -1,179 +1,184 @@
+//
+//  TextGenerationView.swift
+//  CreativeStudio
+//
+//  Created by Modi on 2025/10/8.
+//
+
 import SwiftUI
 
 struct TextGenerationView: View {
-    @StateObject var viewModel: TextGenerationViewModel
     @EnvironmentObject var appCoordinator: AppCoordinator
+    @StateObject var viewModel = TextGenerationViewModel()
     @FocusState private var isInputFocused: Bool
     
     var body: some View {
-//        NavigationStack {
-            VStack(spacing: 16) {
+        NavigationStack {
+            VStack(spacing: 0) {
                 // Input area
-                inputAreaView
-                
-                // Generation controls
-                generationControlsView
-                
-                // Progress indicator
-                if viewModel.isGenerating {
-                    progressIndicatorView
+                VStack(alignment: .leading, spacing: 15) {
+                    TextEditor(text: $viewModel.inputText)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(minHeight: 150, maxHeight: 200)
+                        .padding(15)
+                        .background(Color(red: 0.973, green: 0.973, blue: 0.98))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color(red: 0.867, green: 0.867, blue: 0.867), lineWidth: 2)
+                        )
+                        .focused($isInputFocused)
+                    
+                    HStack {
+                        Text("💡 提示：点击键盘麦克风图标可语音输入")
+                            .font(.caption)
+                            .foregroundColor(Color(red: 0.4, green: 0.498, blue: 0.918))
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal)
                 }
+                .padding(.horizontal)
                 
                 Spacer()
-            }
-            .padding()
-            .navigationTitle("文字生成")
-            .navigationBarTitleDisplayMode(.inline)
-//        }
-    }
-    
-    private var inputAreaView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("输入提示")
-                    .font(.headline)
-                Spacer()
-                Text("\(viewModel.inputText.count)/500")
-                    .font(.caption)
-                    .foregroundColor(viewModel.inputText.count > 450 ? .red : .secondary)
-            }
-            
-            TextEditor(text: $viewModel.inputText)
-                .frame(minHeight: 200, maxHeight: 300)
-                .padding(8)
-                .background(Color(.systemGray6))
-                .cornerRadius(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(isInputFocused ? Color.blue : Color(.systemGray4), lineWidth: 1)
-                )
-                .focused($isInputFocused)
-            
-            // Quick insert buttons for recent prompts
-            if !viewModel.recentPrompts.isEmpty {
-                Text("最近使用")
-                    .font(.headline)
                 
-//                LazyHStack {
-                HStack {
-                    ForEach(viewModel.recentPrompts, id: \.self) { prompt in
-                        Button(prompt) {
-                            viewModel.inputText = prompt
+                // Generate button
+                Button(action: {
+                    if appCoordinator.userQuota.canGenerate() {
+                        viewModel.generateContent { project in
+                            // Update quota
+                            appCoordinator.userQuota.useGeneration()
+                            
+                            // Navigate to results
+                            appCoordinator.navigateToResults(for: project)
                         }
-                        .buttonStyle(.bordered)
-                        .foregroundColor(.blue)
                     }
-                }
-            }
-        }
-    }
-    
-    private var generationControlsView: some View {
-        VStack(spacing: 12) {
-            Button(action: {
-                Task {
-                    await viewModel.generateContent()
-                }
-            }) {
-                HStack {
-                    if viewModel.isGenerating {
-                        ProgressView()
-                            .scaleEffect(0.8)
+                }) {
+                    HStack {
+                        if viewModel.isGenerating {
+                            ProgressView()
+                                .scaleEffect(1.2)
+                                .frame(width: 20, height: 20)
+                        }
+                        
+                        Text(viewModel.isGenerating ? "生成中..." : "✨ 生成创意内容")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
                     }
-                    Text(viewModel.isGenerating ? "生成中..." : "智能生成")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(LinearGradient(
+                        colors: [Color(red: 0.4, green: 0.498, blue: 0.918), Color(red: 0.463, green: 0.294, blue: 0.635)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                    .cornerRadius(12)
                 }
-                .frame(maxWidth: .infinity)
+                .disabled(viewModel.isGenerating || !appCoordinator.userQuota.canGenerate())
                 .padding()
-                .background(viewModel.isGenerating ? Color.gray : Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(12)
             }
-            .disabled(viewModel.inputText.isEmpty || viewModel.isGenerating)
-            
-            // Advanced parameters
-            disclosureGroup {
-                ParameterSliderView(
-                    title: "创意度", 
-                    value: Binding(
-                        get: { viewModel.parameters.temperature },
-                        set: { viewModel.parameters.temperature = $0 }
-                    ),
-                    range: 0.1...1.0,
-                    format: .number.precision(.fractionLength(1))
-                )
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("文字生成")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                }
                 
-                ParameterSliderView(
-                    title: "最大长度", 
-                    value: Binding(
-                        get: { Double(viewModel.parameters.maxTokens) },
-                        set: { viewModel.parameters.maxTokens = Int($0) }
-                    ),
-                    range: 100...1000,
-                    format: .number
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("←") {
+                        appCoordinator.navigateToDashboard()
+                    }
+                    .foregroundColor(Color.white)
+                }
+            }
+            .background(
+                LinearGradient(
+                    colors: [Color(red: 0.4, green: 0.498, blue: 0.918), Color(red: 0.463, green: 0.294, blue: 0.635)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
-                
-                Picker("风格", selection: $viewModel.parameters.style) {
-                    ForEach(TextStyle.allCases, id: \.self) { style in
-                        Text(getStyleName(for: style)).tag(style)
+                .ignoresSafeArea()
+            )
+            .overlay(
+                // Generating overlay
+                ZStack {
+                    if viewModel.isGenerating {
+                        Color.black
+                            .opacity(0.2)
+                            .ignoresSafeArea()
+                        
+                        VStack(spacing: 20) {
+                            ProgressView()
+                                .scaleEffect(2)
+                                .progressViewStyle(CircularProgressViewStyle(tint: Color(red: 0.4, green: 0.498, blue: 0.918)))
+                            
+                            Text("正在生成创意内容，请稍候...")
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                        }
                     }
                 }
-                .pickerStyle(.segmented)
-            }
-        }
-    }
-    
-    private func disclosureGroup<Content: View>(@ViewBuilder content: @escaping () -> Content) -> some View {
-        DisclosureGroup("高级参数", content: content)
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(8)
-    }
-    
-    private var progressIndicatorView: some View {
-        VStack(spacing: 8) {
-            ProgressView(value: viewModel.progress, total: 1.0)
-                .progressViewStyle(CircularProgressViewStyle())
-            
-            Text("处理中... ($Int(viewModel.progress * 100))%")
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        .padding()
-    }
-    
-    private func getStyleName(for style: TextStyle) -> String {
-        switch style {
-        case .creative: return "创意"
-        case .technical: return "技术"
-        case .formal: return "正式"
-        case .casual: return "随意"
-        case .professional: return "专业"
+            )
         }
     }
 }
 
-struct ParameterSliderView: View {
-    let title: String
-    @Binding var value: Double
-    let range: ClosedRange<Double>
-    let format: FloatingPointFormatStyle<Double>
+class TextGenerationViewModel: ObservableObject {
+    @Published var inputText: String = ""
+    @Published var isGenerating: Bool = false
+    @Published var generatedText: String = ""
+    @Published var progress: Double = 0.0
     
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(title)
-                Spacer()
-                Text(format.format(value))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+    func generateContent(completion: @escaping (Project) -> Void) {
+        guard !inputText.isEmpty else { return }
+        
+        isGenerating = true
+        progress = 0.0
+        
+        // Simulate generation process
+        let initialProgress = progress
+        
+        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
+            DispatchQueue.main.async {
+                self.progress += 0.02
+                
+                if self.progress >= 1.0 {
+                    timer.invalidate()
+                    self.isGenerating = false
+                    self.progress = 0.0
+                    
+                    // Create a new project with the generated result
+                    let generationResult = GenerationResult(
+                        prompt: self.inputText,
+                        texts: ["示例生成文案：根据您的描述生成的创意内容，具有高度的个性化和专业性。"]
+                    )
+                    
+                    let project = Project(
+                        name: "文字生成项目",
+                        generationResults: [generationResult]
+                    )
+                    
+                    // Call the completion handler to notify the parent view
+                    completion(project)
+                }
             }
-            Slider(value: $value, in: range)
         }
-        .padding(.vertical, 4)
+    }
+    
+    func stopGeneration() {
+        isGenerating = false
+        progress = 0.0
+    }
+    
+    func saveResult() {
+        // Implementation for saving result
     }
 }
 
 #Preview {
-    TextGenerationView(viewModel: TextGenerationViewModel())
-        .environmentObject(AppCoordinator())
+    NavigationStack {
+        TextGenerationView()
+            .environmentObject(AppCoordinator())
+    }
 }

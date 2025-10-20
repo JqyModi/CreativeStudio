@@ -1,121 +1,193 @@
+//
+//  ResultsView.swift
+//  CreativeStudio
+//
+//  Created by Modi on 2025/10/8.
+//
+
 import SwiftUI
 
 struct ResultsView: View {
-    @StateObject var viewModel: ResultsViewModel
     @EnvironmentObject var appCoordinator: AppCoordinator
+    @State private var selectedTab: ResultTab = .image
+    let project: Project
     
     var body: some View {
-//        NavigationStack {
-            VStack {
-                // Tab view for different result types
-                TabView {
-                    // Images tab
-                    ScrollView {
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
-                            ForEach(0..<4, id: \.self) { index in
-                                if index < viewModel.generatedImages.count {
-                                    Image(uiImage: UIImage(data: viewModel.generatedImages[index]) ?? UIImage())
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(maxWidth: .infinity, maxHeight: 200)
-                                        .clipped()
-                                        .cornerRadius(8)
-                                } else {
-                                    Rectangle()
-                                        .fill(Color(.systemGray6))
-                                        .frame(maxWidth: .infinity, maxHeight: 200)
-                                        .overlay(
-                                            Text("Image $index + 1)")
-                                                .foregroundColor(.secondary)
-                                        )
-                                        .cornerRadius(8)
-                                }
+        NavigationStack {
+            ZStack {
+                // Background gradient
+                LinearGradient(
+                    colors: [Color(red: 0.4, green: 0.498, blue: 0.918), Color(red: 0.463, green: 0.294, blue: 0.635)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Quick regenerate button
+                        HStack {
+                            Button(action: {
+                                // Regenerate content
+                                print("Regenerating content...")
+                            }) {
+                                Label("🔄 不满意？一键重新生成", systemImage: "arrow.clockwise")
+                                    .font(.subheadline)
+                                    .foregroundColor(Color(red: 0.4, green: 0.498, blue: 0.918))
                             }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(red: 0.945, green: 0.945, blue: 0.953))
+                            .cornerRadius(8)
+                            
+                            Spacer()
                         }
-                        .padding()
-                    }
-                    .tabItem {
-                        Image(systemName: "photo")
-                        Text("图像")
-                    }
-                    
-                    // Texts tab
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 16) {
-                            ForEach(viewModel.generatedTexts.indices, id: \.self) { index in
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("文本结果 $index + 1)")
-                                        .font(.headline)
-                                    
-                                    Text(viewModel.generatedTexts[index])
-                                        .padding()
-                                        .background(Color(.systemGray6))
-                                        .cornerRadius(8)
-                                }
-                            }
-                        }
-                        .padding()
-                    }
-                    .tabItem {
-                        Image(systemName: "doc.text")
-                        Text("文案")
-                    }
-                    
-                    // Combined content tab
-                    ScrollView {
-                        VStack(spacing: 16) {
-                            ForEach(0..<min(viewModel.generatedImages.count, viewModel.generatedTexts.count), id: \.self) { index in
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Image(uiImage: UIImage(data: viewModel.generatedImages[index]) ?? UIImage())
-                                        .resizable()
-                                        .scaledToFit()
+                        .padding(.horizontal)
+                        
+                        // Result tabs
+                        HStack(spacing: 10) {
+                            ForEach(ResultTab.allCases, id: \.self) { tab in
+                                Button(action: {
+                                    selectedTab = tab
+                                }) {
+                                    Text(tab.title)
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
                                         .frame(maxWidth: .infinity)
-                                        .cornerRadius(8)
-                                    
-                                    Text(viewModel.generatedTexts[index])
-                                        .padding()
-                                        .background(Color(.systemGray6))
-                                        .cornerRadius(8)
+                                        .padding(12)
+                                        .background(
+                                            selectedTab == tab
+                                            ? Color(red: 0.4, green: 0.498, blue: 0.918)
+                                            : Color(red: 0.973, green: 0.973, blue: 0.98)
+                                        )
+                                        .foregroundColor(selectedTab == tab ? .white : .primary)
+                                        .cornerRadius(10)
                                 }
-                                .padding()
-                                .background(Color(.systemBackground))
-                                .cornerRadius(12)
                             }
                         }
+                        .padding(.horizontal)
+                        
+                        // Simple placeholder for tab content
+                        VStack(spacing: 20) {
+                            Text("Result Content")
+                                .font(.title)
+                                .padding()
+                            
+                            Text("Selected tab: \(selectedTab.title)")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(20)
+                        .background(Color(red: 0.973, green: 0.973, blue: 0.98))
+                        .cornerRadius(15)
+                        .padding(.horizontal)
+                        
+                        // Export options
+                        HStack(spacing: 10) {
+                            Button(action: {
+                                // Save to album
+                            }) {
+                                HStack {
+                                    Image(systemName: "tray.and.arrow.down")
+                                    Text("保存到相册")
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(12)
+                                .background(Color.white)
+                                .cornerRadius(10)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color(red: 0.867, green: 0.867, blue: 0.867), lineWidth: 1)
+                                )
+                            }
+                            
+                            Button(action: {
+                                // Copy link
+                            }) {
+                                HStack {
+                                    Image(systemName: "link")
+                                    Text("复制链接")
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(12)
+                                .background(Color.white)
+                                .cornerRadius(10)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color(red: 0.867, green: 0.867, blue: 0.867), lineWidth: 1)
+                                )
+                            }
+                            
+                            Button(action: {
+                                // Regenerate
+                                print("Regenerating content...")
+                            }) {
+                                HStack {
+                                    Image(systemName: "arrow.clockwise")
+                                    Text("重新生成")
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(12)
+                                .background(Color.white)
+                                .cornerRadius(10)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color(red: 0.867, green: 0.867, blue: 0.867), lineWidth: 1)
+                                )
+                            }
+                        }
+                        .padding(.horizontal)
                     }
-                    .tabItem {
-                        Image(systemName: "rectangle.3.group")
-                        Text("组合")
-                    }
+                    .padding(.top, 10)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("生成结果")
+                        .font(.headline)
+                        .fontWeight(.semibold)
                 }
                 
-                // Action buttons
-                actionButtonsView
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("←") {
+                        appCoordinator.navigateToDashboard()
+                    }
+                    .foregroundColor(Color.white)
+                }
             }
-            .navigationTitle("生成结果")
-            .navigationBarTitleDisplayMode(.inline)
-//        }
-    }
-    
-    private var actionButtonsView: some View {
-        HStack(spacing: 12) {
-            Button("重新生成") {
-                viewModel.regenerateContent()
-            }
-            .buttonStyle(.borderedProminent)
-            
-            Spacer()
-            
-            Button("导出") {
-                viewModel.exportResults()
-            }
-            .buttonStyle(.borderedProminent)
         }
-        .padding()
+    }
+}
+
+enum ResultTab: CaseIterable {
+    case image
+    case text
+    case combined
+    case derived
+    case relatedText
+    case style
+    
+    var title: String {
+        switch self {
+        case .image:
+            return "图像"
+        case .text:
+            return "文案"
+        case .combined:
+            return "组合"
+        case .derived:
+            return "衍生图像"
+        case .relatedText:
+            return "相关文案"
+        case .style:
+            return "风格变化"
+        }
     }
 }
 
 #Preview {
-    ResultsView(viewModel: ResultsViewModel())
-        .environmentObject(AppCoordinator())
+    NavigationStack {
+        ResultsView(project: Project(name: "Test Project"))
+            .environmentObject(AppCoordinator())
+    }
 }

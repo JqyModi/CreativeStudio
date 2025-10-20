@@ -1,121 +1,133 @@
-// CreativeStudio/Sources/App/AppCoordinator.swift
-import SwiftUI
-import Combine
-import UIKit
+//
+//  AppCoordinator.swift
+//  CreativeStudio
+//
+//  Created by Modi on 2025/10/8.
+//
 
-final class AppCoordinator: ObservableObject {
+import SwiftUI
+import SwiftData
+
+class AppCoordinator: ObservableObject {
     @Published var userQuota: UserQuota
     @Published var currentProject: Project?
-    @Published var navigationStack: [NavigationDestination] = [.dashboard]
+    @Published var currentView: ContentViewType = .dashboard
     
-    private var cancellables = Set<AnyCancellable>()
+    init() {
+        // Initialize with default quota values
+        self.userQuota = UserQuota(dailyLimit: 50, usedToday: 0, resetTime: Date().addingTimeInterval(24*60*60))
+    }
     
-    // Make UserDefaultsStorage available to other parts of the app
-    let userDefaultsStorage: UserDefaultsStorage
-
-    init(userDefaultsStorage: UserDefaultsStorage = .init()) {
-        self.userDefaultsStorage = userDefaultsStorage
-        self.userQuota = userDefaultsStorage.loadUserQuota() ?? 
-            UserQuota(dailyLimit: 50, usedToday: 0, resetTime: Date().addingTimeInterval(86400))
-        
-        // Restore navigation history
-        if let savedHistory = userDefaultsStorage.loadNavigationHistory() {
-            navigationStack = savedHistory
-        }
-        
-        // Setup accessibility observers
-        setupAccessibilityObservers()
-    }
-
-    func navigateTo(_ destination: NavigationDestination) {
-        // Check quota for generation destinations
-        if case .textGeneration = destination, !userQuota.canGenerate() {
-            navigationStack.append(.upgradeRequired)
-            return
-        }
-        
-        navigationStack.append(destination)
-        saveNavigationState()
-    }
-
-    func navigateBack() {
-        guard navigationStack.count > 1 else { return }
-        navigationStack.removeLast()
-        saveNavigationState()
-    }
-
     func navigateToTextGeneration() {
-        navigateTo(.textGeneration)
+        currentView = .textGeneration
     }
-
+    
     func navigateToImageUpload() {
-        navigateTo(.imageUpload)
+        currentView = .imageUpload
     }
-
+    
     func navigateToResults(for project: Project) {
-        self.currentProject = project
-        navigateTo(.results)
+        currentProject = project
+        currentView = .results
     }
-
+    
+    func navigateToDashboard() {
+        currentView = .dashboard
+    }
+    
+    func navigateToProjectList() {
+        currentView = .projectList
+    }
+    
     func resetQuotaIfNeeded() {
-        userQuota.resetIfNeeded()
-        userDefaultsStorage.saveUserQuota(userQuota)
-    }
-
-    private func saveNavigationState() {
-        userDefaultsStorage.saveNavigationHistory(navigationStack)
-    }
-
-    private func setupAccessibilityObservers() {
-        // Monitor VoiceOver status
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleVoiceOverStatusChanged),
-            name: UIAccessibility.voiceOverStatusDidChangeNotification,
-            object: nil
-        )
-        
-        // Monitor Switch Control
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleSwitchControlStatusChanged),
-            name: UIAccessibility.switchControlStatusDidChangeNotification,
-            object: nil
-        )
-    }
-
-    @objc private func handleVoiceOverStatusChanged() {
-        print("VoiceOver status changed: \(UIAccessibility.isVoiceOverRunning)")
-        // Update UI accessibility elements
-    }
-
-    @objc private func handleSwitchControlStatusChanged() {
-        print("SwitchControl status changed: \(UIAccessibility.isSwitchControlRunning)")
-        // Adjust focus management
+        if Calendar.current.compare(Date(), to: userQuota.resetTime, toGranularity: .day) == .orderedDescending {
+            userQuota.usedToday = 0
+            userQuota.resetTime = Calendar.current.startOfDay(for: Date().addingTimeInterval(24*60*60))
+        }
     }
 }
 
-enum NavigationDestination: Hashable, Codable {
+enum ContentViewType: Equatable {
     case dashboard
     case textGeneration
     case imageUpload
     case results
-    case upgradeRequired
+    case projectList
 }
 
-// MARK: - Accessibility Support
-extension AppCoordinator {
-    func getAccessibilityRoute(for destination: NavigationDestination) -> String {
-        switch destination {
-        case .dashboard: return "仪表盘"
-        case .textGeneration: return "文字生成"
-        case .imageUpload: return "图像上传"
-        case .results: return "结果展示"
-        case .upgradeRequired: return "升级账户"
-        }
+// Data models
+class UserQuota: ObservableObject {
+    var dailyLimit: Int
+    var usedToday: Int
+    var resetTime: Date
+    
+    init(dailyLimit: Int, usedToday: Int, resetTime: Date) {
+        self.dailyLimit = dailyLimit
+        self.usedToday = usedToday
+        self.resetTime = resetTime
     }
     
-    func getNavigationHistory() -> [String] {
-        navigationStack.prefix(5).map { getAccessibilityRoute(for: $0) }
+    var remaining: Int {
+        return dailyLimit - usedToday
     }
+    
+    var usagePercentage: Double {
+        return Double(usedToday) / Double(dailyLimit)
+    }
+    
+    func canGenerate() -> Bool {
+        return remaining > 0
+    }
+    
+    func useGeneration() {
+        if canGenerate() {
+            usedToday += 1
+        }
+    }
+}
+
+class Project {
+    var id: UUID
+    var name: String
+    var createdAt: Date
+    var status: ProjectStatus
+    var generationResults: [GenerationResult]
+    
+    init(id: UUID = UUID(), name: String, createdAt: Date = Date(), status: ProjectStatus = .completed, generationResults: [GenerationResult] = []) {
+        self.id = id
+        self.name = name
+        self.createdAt = createdAt
+        self.status = status
+        self.generationResults = generationResults
+    }
+}
+
+class GenerationResult {
+    var id: UUID
+    var prompt: String
+    var images: [Data]  // JPEG format image data
+    var texts: [String]
+    var styleParams: StyleParameters
+    var createdAt: Date
+    
+    init(id: UUID = UUID(), prompt: String, images: [Data] = [], texts: [String] = [], styleParams: StyleParameters = StyleParameters(), createdAt: Date = Date()) {
+        self.id = id
+        self.prompt = prompt
+        self.images = images
+        self.texts = texts
+        self.styleParams = styleParams
+        self.createdAt = createdAt
+    }
+}
+
+struct StyleParameters {
+    var style: String = "default"
+    var creativity: Double = 0.5
+    var temperature: Double = 0.7
+    var strength: Double = 0.8
+}
+
+enum ProjectStatus: String {
+    case inProgress = "进行中"
+    case completed = "已完成"
 }

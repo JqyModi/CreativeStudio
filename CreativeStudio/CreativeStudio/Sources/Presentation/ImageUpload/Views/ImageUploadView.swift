@@ -1,181 +1,208 @@
+//
+//  ImageUploadView.swift
+//  CreativeStudio
+//
+//  Created by Modi on 2025/10/8.
+//
+
 import SwiftUI
-import UIKit
 
 struct ImageUploadView: View {
-    @StateObject var viewModel: ImageUploadViewModel
     @EnvironmentObject var appCoordinator: AppCoordinator
+    @StateObject var viewModel = ImageUploadViewModel()
+    @State private var showingImagePicker = false
+    @State private var inputDescription = ""
     
     var body: some View {
-//        NavigationStack {
-            VStack(spacing: 16) {
-                // Upload area
-                uploadAreaView
-                
-                // Image previews
-                if !viewModel.selectedImages.isEmpty {
-                    imagePreviewsView
-                }
-                
-                // Description input
-                descriptionInputView
-                
-                // Style selection
-                styleSelectionView
-                
-                // Generate button
-                generateButtonView
-                
-                Spacer()
-            }
-            .padding()
-            .navigationTitle("图像上传")
-            .navigationBarTitleDisplayMode(.inline)
-//        }
-    }
-    
-    private var uploadAreaView: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(viewModel.isDragOver ? Color.blue : Color.gray, lineWidth: 2)
-                .background(Color(.systemGray6))
-                .onTapGesture {
-                    viewModel.showImagePicker = true
-                }
-            
-            VStack(spacing: 12) {
-                Image(systemName: "photo.on.rectangle.angled")
-                    .font(.largeTitle)
-                    .foregroundColor(.gray)
-                
-                Text("点击上传或拖拽图片")
-                    .foregroundColor(.secondary)
-                
-                Text("支持 JPG/PNG 格式，最大20MB")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .frame(maxWidth: .infinity, maxHeight: 200)
-        }
-        .onDrop(of: ["public.file-url"], isTargeted: $viewModel.isDragOver) { providers in
-            return viewModel.handleDrop(providers: providers)
-        }
-    }
-    
-    private var imagePreviewsView: some View {
-        VStack(spacing: 12) {
-            Text("已选择的图片")
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(Array(viewModel.selectedImages.enumerated()), id: \.offset) { index, imageData in
-                        let uiImage = UIImage(data: imageData) ?? UIImage()
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 100, height: 100)
-                            .clipped()
-                            .cornerRadius(8)
-                            .overlay(
-                                Button(action: {
-                                    viewModel.removeImage(at: index)
-                                }) {
-                                    Circle()
-                                        .fill(Color.red)
-                                        .frame(width: 20, height: 20)
-                                        .overlay(
-                                            Image(systemName: "xmark")
-                                                .foregroundColor(.white)
-                                                .font(.caption)
-                                        )
-                                }
-                                .offset(x: 40, y: -40)
-                                .zIndex(1)
+        NavigationStack {
+            VStack(spacing: 0) {
+                // Image upload area
+                VStack(spacing: 15) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 15)
+                            .stroke(Color(red: 0.867, green: 0.867, blue: 0.867), lineWidth: 2)
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .fill(Color(red: 0.973, green: 0.973, blue: 0.98))
                             )
-                    }
-                }
-            }
-        }
-    }
-    
-    private var descriptionInputView: some View {
-        Group {
-            if viewModel.selectedImages.count > 0 {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("描述 (可选)")
-                            .font(.headline)
-                        Spacer()
-                        Text("\(viewModel.descriptionText.count)/200")
-                            .font(.caption)
-                            .foregroundColor(viewModel.descriptionText.count > 180 ? .red : .secondary)
-                    }
-                    
-                    TextEditor(text: $viewModel.descriptionText)
-                        .frame(height: 100)
-                        .padding(8)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                }
-            }
-        }
-    }
-    
-    private var styleSelectionView: some View {
-        Group {
-            if viewModel.selectedImages.count > 0 {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("艺术风格")
-                        .font(.headline)
-                    
-                    Picker("选择风格", selection: $viewModel.selectedStyle) {
-                        ForEach(ArtStyle.allCases, id: \.self) { style in
-                            Text(getStyleName(for: style)).tag(style)
+                        
+                        VStack(spacing: 15) {
+                            Image(systemName: "photo.on.rectangle.angled")
+                                .font(.system(size: 48))
+                                .foregroundColor(Color(red: 0.4, green: 0.498, blue: 0.918))
+                            
+                            Text("点击或拖拽上传图片")
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            
+                            Text("支持 JPG, PNG, HEIC 格式")
+                                .font(.subheadline)
+                                .foregroundColor(Color(red: 0.525, green: 0.525, blue: 0.545))
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .onTapGesture {
+                            showingImagePicker = true
                         }
                     }
-                    .pickerStyle(.segmented)
+                    .frame(height: 200)
+                    .padding(.horizontal)
+                    
+                    Text("或")
+                        .foregroundColor(Color(red: 0.525, green: 0.525, blue: 0.545))
+                    
+                    // Description input
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("可选：为上传的图片添加描述，帮助AI更好地理解内容")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
+                        
+                        TextEditor(text: $inputDescription)
+                            .frame(minHeight: 100, maxHeight: 150)
+                            .padding(10)
+                            .background(Color(red: 0.973, green: 0.973, blue: 0.98))
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(red: 0.867, green: 0.867, blue: 0.867), lineWidth: 1)
+                            )
+                            .padding(.horizontal)
+                    }
                 }
-            }
-        }
-    }
-    
-    private var generateButtonView: some View {
-        Group {
-            if viewModel.selectedImages.count > 0 {
+                
+                Spacer()
+                
+                // Generate button
                 Button(action: {
-                    Task {
-                        await viewModel.generateContent()
+                    if appCoordinator.userQuota.canGenerate() {
+                        viewModel.generateContent(from: inputDescription) { project in
+                            // Update quota
+                            appCoordinator.userQuota.useGeneration()
+                            
+                            // Navigate to results
+                            appCoordinator.navigateToResults(for: project)
+                        }
                     }
                 }) {
                     HStack {
                         if viewModel.isGenerating {
                             ProgressView()
-                                .scaleEffect(0.8)
+                                .scaleEffect(1.2)
+                                .frame(width: 20, height: 20)
                         }
-                        Text(viewModel.isGenerating ? "生成中..." : "生成内容")
+                        
+                        Text(viewModel.isGenerating ? "生成中..." : "🔄 生成衍生内容")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(viewModel.isGenerating ? Color.gray : Color.blue)
-                    .foregroundColor(.white)
+                    .background(LinearGradient(
+                        colors: [Color(red: 0.4, green: 0.498, blue: 0.918), Color(red: 0.463, green: 0.294, blue: 0.635)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
                     .cornerRadius(12)
                 }
-                .disabled(viewModel.isGenerating)
+                .disabled(viewModel.isGenerating || !appCoordinator.userQuota.canGenerate())
+                .padding()
             }
-        }
-    }
-    
-    private func getStyleName(for style: ArtStyle) -> String {
-        switch style {
-        case .defaultStyle: return "默认"
-        case .artistic: return "艺术"
-        case .realistic: return "写实"
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("图像上传")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                }
+                
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("←") {
+                        appCoordinator.navigateToDashboard()
+                    }
+                    .foregroundColor(Color.white)
+                }
+            }
+            .background(
+                LinearGradient(
+                    colors: [Color(red: 0.4, green: 0.498, blue: 0.918), Color(red: 0.463, green: 0.294, blue: 0.635)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+            )
+            .overlay(
+                // Generating overlay
+                ZStack {
+                    if viewModel.isGenerating {
+                        Color.black
+                            .opacity(0.2)
+                            .ignoresSafeArea()
+                        
+                        VStack(spacing: 20) {
+                            ProgressView()
+                                .scaleEffect(2)
+                                .progressViewStyle(CircularProgressViewStyle(tint: Color(red: 0.4, green: 0.498, blue: 0.918)))
+                            
+                            Text("正在生成衍生内容，请稍候...")
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                        }
+                    }
+                }
+            )
+            .sheet(isPresented: $showingImagePicker) {
+                // In a real app, this would show an image picker
+                // For now, we'll just simulate the behavior
+            }
         }
     }
 }
 
+class ImageUploadViewModel: ObservableObject {
+    @Published var isGenerating: Bool = false
+    @Published var progress: Double = 0.0
+    
+    func generateContent(from description: String, completion: @escaping (Project) -> Void) {
+        isGenerating = true
+        progress = 0.0
+        
+        // Simulate generation process
+        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
+            DispatchQueue.main.async {
+                self.progress += 0.02
+                
+                if self.progress >= 1.0 {
+                    timer.invalidate()
+                    self.isGenerating = false
+                    self.progress = 0.0
+                    
+                    // Create a new project with the generated result
+                    let generationResult = GenerationResult(
+                        prompt: description.isEmpty ? "用户上传的图像" : description,
+                        texts: ["示例生成文案：基于上传图像的智能描述和创意建议。"]
+                    )
+                    
+                    let project = Project(
+                        name: "图像上传项目",
+                        generationResults: [generationResult]
+                    )
+                    
+                    // Call the completion handler to notify the parent view
+                    completion(project)
+                }
+            }
+        }
+    }
+    
+    func stopGeneration() {
+        isGenerating = false
+        progress = 0.0
+    }
+}
+
 #Preview {
-    ImageUploadView(viewModel: ImageUploadViewModel())
-        .environmentObject(AppCoordinator())
+    NavigationStack {
+        ImageUploadView()
+            .environmentObject(AppCoordinator())
+    }
 }
