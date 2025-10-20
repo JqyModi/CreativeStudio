@@ -9,140 +9,135 @@ import SwiftUI
 
 struct DashboardView: View {
     @EnvironmentObject var appCoordinator: AppCoordinator
-    @StateObject var viewModel = DashboardViewModel()
+    @StateObject private var viewModel = DashboardViewModel()
     
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Header with title
-                    VStack(spacing: 10) {
-                        Text("创意内容工作室")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color(red: 1.0, green: 0.42, blue: 0.42), Color(red: 0.306, green: 0.8, blue: 0.788)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
+        ScrollView {
+            VStack(spacing: 20) {
+                // Header with title
+                VStack(spacing: 10) {
+                    Text("创意内容工作室")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color(red: 1.0, green: 0.42, blue: 0.42), Color(red: 0.306, green: 0.8, blue: 0.788)],
+                                startPoint: .leading,
+                                endPoint: .trailing
                             )
-                        
-                        Text("AI驱动的视觉内容创作平台")
+                        )
+                    
+                    Text("AI驱动的视觉内容创作平台")
+                        .font(.subheadline)
+                        .foregroundColor(Color(red: 0.525, green: 0.525, blue: 0.545))
+                }
+//                    .padding(.top, 20)
+                
+                // Stats grid
+                VStack(spacing: 15) {
+                    Text("统计概览")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                    
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 15), count: 2), spacing: 15) {
+                        StatCard(title: "本月创作", value: "24")
+                        StatCard(title: "进行中项目", value: "8")
+                    }
+                    .padding(.horizontal)
+                }
+                
+                // Usage bar
+                VStack(spacing: 10) {
+                    HStack {
+                        Text("今日剩余生成次数")
                             .font(.subheadline)
                             .foregroundColor(Color(red: 0.525, green: 0.525, blue: 0.545))
+                        
+                        Spacer()
+                        
+                        Text("\(appCoordinator.userQuota.remaining)/\(appCoordinator.userQuota.dailyLimit)")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(Color(red: 0.4, green: 0.498, blue: 0.918))
                     }
-//                    .padding(.top, 20)
+                    .padding(.horizontal)
                     
-                    // Stats grid
-                    VStack(spacing: 15) {
-                        Text("统计概览")
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color(red: 0.933, green: 0.933, blue: 0.941))
+                            .frame(height: 8)
+                        
+                        Capsule()
+                            .fill(LinearGradient(
+                                colors: [Color(red: 0.306, green: 0.8, blue: 0.788), Color(red: 0.4, green: 0.498, blue: 0.918)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ))
+                            .frame(width: CGFloat(appCoordinator.userQuota.usagePercentage) * 200, height: 8)
+                    }
+                    .padding(.horizontal)
+                    
+                    Text("免费版")
+                        .font(.caption)
+                        .foregroundColor(Color(red: 0.525, green: 0.525, blue: 0.545))
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .padding(.trailing)
+                }
+                
+                // Quick creation options
+                VStack(spacing: 25) {
+                    Text("快速创作")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                    
+                    HStack(spacing: 15) {
+                        CreationOptionCard(
+                            icon: "📝",
+                            title: "文字生成",
+                            action: { appCoordinator.navigateToTextGeneration() }
+                        )
+                        
+                        CreationOptionCard(
+                            icon: "🖼️",
+                            title: "图像上传",
+                            action: { appCoordinator.navigateToImageUpload() }
+                        )
+                    }
+                    .padding(.horizontal)
+                }
+                
+                // Recent projects
+                VStack(spacing: 15) {
+                    HStack {
+                        Text("最近项目")
                             .font(.headline)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal)
                         
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 15), count: 2), spacing: 15) {
-                            StatCard(title: "本月创作", value: "24")
-                            StatCard(title: "进行中项目", value: "8")
-                        }
-                        .padding(.horizontal)
-                    }
-                    
-                    // Usage bar
-                    VStack(spacing: 10) {
-                        HStack {
-                            Text("今日剩余生成次数")
+                        Button {
+                            appCoordinator.navigateToProjectList()
+                        } label: {
+                            Text("全部")
                                 .font(.subheadline)
-                                .foregroundColor(Color(red: 0.525, green: 0.525, blue: 0.545))
-                            
-                            Spacer()
-                            
-                            Text("\(appCoordinator.userQuota.remaining)/\(appCoordinator.userQuota.dailyLimit)")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
                                 .foregroundColor(Color(red: 0.4, green: 0.498, blue: 0.918))
                         }
-                        .padding(.horizontal)
-                        
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(Color(red: 0.933, green: 0.933, blue: 0.941))
-                                .frame(height: 8)
-                            
-                            Capsule()
-                                .fill(LinearGradient(
-                                    colors: [Color(red: 0.306, green: 0.8, blue: 0.788), Color(red: 0.4, green: 0.498, blue: 0.918)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                ))
-                                .frame(width: CGFloat(appCoordinator.userQuota.usagePercentage) * 200, height: 8)
-                        }
-                        .padding(.horizontal)
-                        
-                        Text("免费版")
-                            .font(.caption)
-                            .foregroundColor(Color(red: 0.525, green: 0.525, blue: 0.545))
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                            .padding(.trailing)
-                    }
-                    
-                    // Quick creation options
-                    VStack(spacing: 25) {
-                        Text("快速创作")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal)
-                        
-                        HStack(spacing: 15) {
-                            CreationOptionCard(
-                                icon: "📝",
-                                title: "文字生成",
-                                action: { appCoordinator.navigateToTextGeneration() }
-                            )
-                            
-                            CreationOptionCard(
-                                icon: "🖼️",
-                                title: "图像上传",
-                                action: { appCoordinator.navigateToImageUpload() }
-                            )
-                        }
-                        .padding(.horizontal)
-                    }
-                    
-                    // Recent projects
-                    VStack(spacing: 15) {
-                        HStack {
-                            Text("最近项目")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            
-//                            NavigationLink("全部", destination: ProjectListView())
-//                                .font(.subheadline)
-//                                .foregroundColor(Color(red: 0.4, green: 0.498, blue: 0.918))
-                            Button {
-                                appCoordinator.navigateToProjectList()
-                            } label: {
-                                Text("全部")
-                                    .font(.subheadline)
-                                    .foregroundColor(Color(red: 0.4, green: 0.498, blue: 0.918))
-                            }
 
-                        }
-                        .padding(.horizontal)
-                        
-                        ForEach(viewModel.recentProjects, id: \.id) { project in
-                            ProjectRowView(project: project)
-                        }
+                    }
+                    .padding(.horizontal)
+                    
+                    ForEach(viewModel.recentProjects, id: \.id) { project in
+                        ProjectRowView(project: project)
                     }
                 }
-//                .padding(.vertical, 20)
             }
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("仪表盘")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                }
+//                .padding(.vertical, 20)
+        }
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("仪表盘")
+                    .font(.headline)
+                    .fontWeight(.semibold)
             }
         }
         .onAppear {
@@ -266,7 +261,7 @@ struct ProjectRowView: View {
         let calendar = Calendar.current
         let now = Date()
         let components = calendar.dateComponents([.hour, .day, .weekOfYear], from: date, to: now)
-        
+
         if let hour = components.hour, hour < 24 {
             return "\(hour)小时前"
         } else if let day = components.day, day == 1 {
@@ -284,30 +279,15 @@ struct ProjectListView: View {
     @EnvironmentObject var appCoordinator: AppCoordinator
     
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Text("项目列表")
-            }
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("项目列表")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                }
-                
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("←") {
-                        appCoordinator.navigateToDashboard()
-                    }
-                    .foregroundColor(Color.black)
-                }
-            }
+        ZStack {
+            Text("项目列表")
         }
     }
 }
 
+@MainActor
 class DashboardViewModel: ObservableObject {
-    @Published var stats: DashboardStats = DashboardStats()
+    @Published var stats = DashboardStats()
     @Published var projects: [Project] = []
     @Published var recentProjects: [Project] = []
     

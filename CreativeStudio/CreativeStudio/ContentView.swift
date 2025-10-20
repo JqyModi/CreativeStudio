@@ -12,28 +12,8 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            switch appCoordinator.currentView {
-            case .dashboard:
-                DashboardView()
-                    .environmentObject(appCoordinator)
-            case .textGeneration:
-                TextGenerationView()
-                    .environmentObject(appCoordinator)
-            case .imageUpload:
-                ImageUploadView()
-                    .environmentObject(appCoordinator)
-            case .results:
-                if let project = appCoordinator.currentProject {
-                    ResultsView(project: project)
-                        .environmentObject(appCoordinator)
-                } else {
-                    DashboardView()
-                        .environmentObject(appCoordinator)
-                }
-            case .projectList:
-                ProjectListView()
-                    .environmentObject(appCoordinator)
-            }
+            AppNavigationView()
+                .environmentObject(appCoordinator)
             
             // Floating Action Button
 //            VStack {

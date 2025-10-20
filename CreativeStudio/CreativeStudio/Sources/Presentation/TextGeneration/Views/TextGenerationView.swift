@@ -9,118 +9,102 @@ import SwiftUI
 
 struct TextGenerationView: View {
     @EnvironmentObject var appCoordinator: AppCoordinator
-    @StateObject var viewModel = TextGenerationViewModel()
+    @StateObject private var viewModel = TextGenerationViewModel()
     @FocusState private var isInputFocused: Bool
     
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Input area
-                VStack(alignment: .leading, spacing: 15) {
-                    TextEditor(text: $viewModel.inputText)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(minHeight: 150, maxHeight: 200)
-                        .padding(15)
-                        .background(Color(red: 0.973, green: 0.973, blue: 0.98))
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(red: 0.867, green: 0.867, blue: 0.867), lineWidth: 2)
-                        )
-                        .focused($isInputFocused)
+        VStack(spacing: 0) {
+            // Input area
+            VStack(alignment: .leading, spacing: 15) {
+                TextEditor(text: $viewModel.inputText)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .frame(minHeight: 150, maxHeight: 200)
+                    .padding(15)
+                    .background(Color(red: 0.973, green: 0.973, blue: 0.98))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(red: 0.867, green: 0.867, blue: 0.867), lineWidth: 2)
+                    )
+                    .focused($isInputFocused)
+                
+                HStack {
+                    Text("💡 提示：点击键盘麦克风图标可语音输入")
+                        .font(.caption)
+                        .foregroundColor(Color(red: 0.4, green: 0.498, blue: 0.918))
                     
-                    HStack {
-                        Text("💡 提示：点击键盘麦克风图标可语音输入")
-                            .font(.caption)
-                            .foregroundColor(Color(red: 0.4, green: 0.498, blue: 0.918))
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal)
+                    Spacer()
                 }
                 .padding(.horizontal)
-                
-                Spacer()
-                
-                // Generate button
-                Button(action: {
-                    if appCoordinator.userQuota.canGenerate() {
-                        viewModel.generateContent { project in
-                            // Update quota
-                            appCoordinator.userQuota.useGeneration()
-                            
-                            // Navigate to results
-                            appCoordinator.navigateToResults(for: project)
-                        }
-                    }
-                }) {
-                    HStack {
-                        if viewModel.isGenerating {
-                            ProgressView()
-                                .scaleEffect(1.2)
-                                .frame(width: 20, height: 20)
-                        }
-                        
-                        Text(viewModel.isGenerating ? "生成中..." : "✨ 生成创意内容")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(LinearGradient(
-                        colors: [Color(red: 0.4, green: 0.498, blue: 0.918), Color(red: 0.463, green: 0.294, blue: 0.635)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
-                    .cornerRadius(12)
-                }
-                .disabled(viewModel.isGenerating || !appCoordinator.userQuota.canGenerate())
-                .padding()
             }
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("文字生成")
+            .padding(.horizontal)
+            
+            Spacer()
+            
+            // Generate button
+            Button(action: {
+                if appCoordinator.userQuota.canGenerate() {
+                    viewModel.generateContent { project in
+                        // Update quota
+                        appCoordinator.userQuota.useGeneration()
+                        
+                        // Navigate to results
+                        appCoordinator.navigateToResults(for: project)
+                    }
+                }
+            }) {
+                HStack {
+                    if viewModel.isGenerating {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                            .frame(width: 20, height: 20)
+                    }
+                    
+                    Text(viewModel.isGenerating ? "生成中..." : "✨ 生成创意内容")
                         .font(.headline)
                         .fontWeight(.semibold)
+                        .foregroundColor(.white)
                 }
-                
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("←") {
-                        appCoordinator.navigateToDashboard()
-                    }
-                    .foregroundColor(Color.white)
-                }
-            }
-            .background(
-                LinearGradient(
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(LinearGradient(
                     colors: [Color(red: 0.4, green: 0.498, blue: 0.918), Color(red: 0.463, green: 0.294, blue: 0.635)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                ))
+                .cornerRadius(12)
+            }
+            .disabled(viewModel.isGenerating || !appCoordinator.userQuota.canGenerate())
+            .padding()
+        }
+        .background(
+            LinearGradient(
+                colors: [Color(red: 0.4, green: 0.498, blue: 0.918), Color(red: 0.463, green: 0.294, blue: 0.635)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
             )
-            .overlay(
-                // Generating overlay
-                ZStack {
-                    if viewModel.isGenerating {
-                        Color.black
-                            .opacity(0.2)
-                            .ignoresSafeArea()
+            .ignoresSafeArea()
+        )
+        .overlay(
+            // Generating overlay
+            ZStack {
+                if viewModel.isGenerating {
+                    Color.black
+                        .opacity(0.2)
+                        .ignoresSafeArea()
+                    
+                    VStack(spacing: 20) {
+                        ProgressView()
+                            .scaleEffect(2)
+                            .progressViewStyle(CircularProgressViewStyle(tint: Color(red: 0.4, green: 0.498, blue: 0.918)))
                         
-                        VStack(spacing: 20) {
-                            ProgressView()
-                                .scaleEffect(2)
-                                .progressViewStyle(CircularProgressViewStyle(tint: Color(red: 0.4, green: 0.498, blue: 0.918)))
-                            
-                            Text("正在生成创意内容，请稍候...")
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                        }
+                        Text("正在生成创意内容，请稍候...")
+                            .font(.headline)
+                            .foregroundColor(.primary)
                     }
                 }
-            )
-        }
+            }
+        )
     }
 }
 

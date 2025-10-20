@@ -9,151 +9,135 @@ import SwiftUI
 
 struct ImageUploadView: View {
     @EnvironmentObject var appCoordinator: AppCoordinator
-    @StateObject var viewModel = ImageUploadViewModel()
+    @StateObject private var viewModel = ImageUploadViewModel()
     @State private var showingImagePicker = false
     @State private var inputDescription = ""
     
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Image upload area
-                VStack(spacing: 15) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 15)
-                            .stroke(Color(red: 0.867, green: 0.867, blue: 0.867), lineWidth: 2)
-                            .background(
-                                RoundedRectangle(cornerRadius: 15)
-                                    .fill(Color(red: 0.973, green: 0.973, blue: 0.98))
-                            )
-                        
-                        VStack(spacing: 15) {
-                            Image(systemName: "photo.on.rectangle.angled")
-                                .font(.system(size: 48))
-                                .foregroundColor(Color(red: 0.4, green: 0.498, blue: 0.918))
-                            
-                            Text("点击或拖拽上传图片")
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                            
-                            Text("支持 JPG, PNG, HEIC 格式")
-                                .font(.subheadline)
-                                .foregroundColor(Color(red: 0.525, green: 0.525, blue: 0.545))
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .onTapGesture {
-                            showingImagePicker = true
-                        }
-                    }
-                    .frame(height: 200)
-                    .padding(.horizontal)
+        VStack(spacing: 0) {
+            // Image upload area
+            VStack(spacing: 15) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 15)
+                        .stroke(Color(red: 0.867, green: 0.867, blue: 0.867), lineWidth: 2)
+                        .background(
+                            RoundedRectangle(cornerRadius: 15)
+                                .fill(Color(red: 0.973, green: 0.973, blue: 0.98))
+                        )
                     
-                    Text("或")
-                        .foregroundColor(Color(red: 0.525, green: 0.525, blue: 0.545))
-                    
-                    // Description input
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("可选：为上传的图片添加描述，帮助AI更好地理解内容")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal)
+                    VStack(spacing: 15) {
+                        Image(systemName: "photo.on.rectangle.angled")
+                            .font(.system(size: 48))
+                            .foregroundColor(Color(red: 0.4, green: 0.498, blue: 0.918))
                         
-                        TextEditor(text: $inputDescription)
-                            .frame(minHeight: 100, maxHeight: 150)
-                            .padding(10)
-                            .background(Color(red: 0.973, green: 0.973, blue: 0.98))
-                            .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color(red: 0.867, green: 0.867, blue: 0.867), lineWidth: 1)
-                            )
-                            .padding(.horizontal)
-                    }
-                }
-                
-                Spacer()
-                
-                // Generate button
-                Button(action: {
-                    if appCoordinator.userQuota.canGenerate() {
-                        viewModel.generateContent(from: inputDescription) { project in
-                            // Update quota
-                            appCoordinator.userQuota.useGeneration()
-                            
-                            // Navigate to results
-                            appCoordinator.navigateToResults(for: project)
-                        }
-                    }
-                }) {
-                    HStack {
-                        if viewModel.isGenerating {
-                            ProgressView()
-                                .scaleEffect(1.2)
-                                .frame(width: 20, height: 20)
-                        }
-                        
-                        Text(viewModel.isGenerating ? "生成中..." : "🔄 生成衍生内容")
+                        Text("点击或拖拽上传图片")
                             .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
+                        
+                        Text("支持 JPG, PNG, HEIC 格式")
+                            .font(.subheadline)
+                            .foregroundColor(Color(red: 0.525, green: 0.525, blue: 0.545))
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(LinearGradient(
-                        colors: [Color(red: 0.4, green: 0.498, blue: 0.918), Color(red: 0.463, green: 0.294, blue: 0.635)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
-                    .cornerRadius(12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .onTapGesture {
+                        showingImagePicker = true
+                    }
                 }
-                .disabled(viewModel.isGenerating || !appCoordinator.userQuota.canGenerate())
-                .padding()
+                .frame(height: 200)
+                .padding(.horizontal)
+                
+                Text("或")
+                    .foregroundColor(Color(red: 0.525, green: 0.525, blue: 0.545))
+                
+                // Description input
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("可选：为上传的图片添加描述，帮助AI更好地理解内容")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal)
+                    
+                    TextEditor(text: $inputDescription)
+                        .frame(minHeight: 100, maxHeight: 150)
+                        .padding(10)
+                        .background(Color(red: 0.973, green: 0.973, blue: 0.98))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color(red: 0.867, green: 0.867, blue: 0.867), lineWidth: 1)
+                        )
+                        .padding(.horizontal)
+                }
             }
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("图像上传")
+            
+            Spacer()
+            
+            // Generate button
+            Button(action: {
+                if appCoordinator.userQuota.canGenerate() {
+                    viewModel.generateContent(from: inputDescription) { project in
+                        // Update quota
+                        appCoordinator.userQuota.useGeneration()
+                        
+                        // Navigate to results
+                        appCoordinator.navigateToResults(for: project)
+                    }
+                }
+            }) {
+                HStack {
+                    if viewModel.isGenerating {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                            .frame(width: 20, height: 20)
+                    }
+                    
+                    Text(viewModel.isGenerating ? "生成中..." : "🔄 生成衍生内容")
                         .font(.headline)
                         .fontWeight(.semibold)
+                        .foregroundColor(.white)
                 }
-                
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("←") {
-                        appCoordinator.navigateToDashboard()
-                    }
-                    .foregroundColor(Color.white)
-                }
-            }
-            .background(
-                LinearGradient(
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(LinearGradient(
                     colors: [Color(red: 0.4, green: 0.498, blue: 0.918), Color(red: 0.463, green: 0.294, blue: 0.635)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                ))
+                .cornerRadius(12)
+            }
+            .disabled(viewModel.isGenerating || !appCoordinator.userQuota.canGenerate())
+            .padding()
+        }
+        .background(
+            LinearGradient(
+                colors: [Color(red: 0.4, green: 0.498, blue: 0.918), Color(red: 0.463, green: 0.294, blue: 0.635)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
             )
-            .overlay(
-                // Generating overlay
-                ZStack {
-                    if viewModel.isGenerating {
-                        Color.black
-                            .opacity(0.2)
-                            .ignoresSafeArea()
+            .ignoresSafeArea()
+        )
+        .overlay(
+            // Generating overlay
+            ZStack {
+                if viewModel.isGenerating {
+                    Color.black
+                        .opacity(0.2)
+                        .ignoresSafeArea()
+                    
+                    VStack(spacing: 20) {
+                        ProgressView()
+                            .scaleEffect(2)
+                            .progressViewStyle(CircularProgressViewStyle(tint: Color(red: 0.4, green: 0.498, blue: 0.918)))
                         
-                        VStack(spacing: 20) {
-                            ProgressView()
-                                .scaleEffect(2)
-                                .progressViewStyle(CircularProgressViewStyle(tint: Color(red: 0.4, green: 0.498, blue: 0.918)))
-                            
-                            Text("正在生成衍生内容，请稍候...")
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                        }
+                        Text("正在生成衍生内容，请稍候...")
+                            .font(.headline)
+                            .foregroundColor(.primary)
                     }
                 }
-            )
-            .sheet(isPresented: $showingImagePicker) {
-                // In a real app, this would show an image picker
-                // For now, we'll just simulate the behavior
             }
+        )
+        .sheet(isPresented: $showingImagePicker) {
+            // In a real app, this would show an image picker
+            // For now, we'll just simulate the behavior
         }
     }
 }

@@ -23,7 +23,7 @@ struct CreativeStudioApp: App {
 //    @EnvironmentObject var appCoordinator: AppCoordinator
 //    
 //    var body: some View {
-//        NavigationStack(path: $appCoordinator.currentView) {
+//        NavigationStack(path: $appCoordinator.navigationStack) {
 //            DashboardView(viewModel: DashboardViewModel())
 //                .navigationDestination(for: ContentViewType.self) { destination in
 //                    switch destination {

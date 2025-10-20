@@ -11,7 +11,7 @@ import SwiftData
 class AppCoordinator: ObservableObject {
     @Published var userQuota: UserQuota
     @Published var currentProject: Project?
-    @Published var currentView: ContentViewType = .dashboard
+    @Published var navigationPath = NavigationPath()
     
     init() {
         // Initialize with default quota values
@@ -19,24 +19,33 @@ class AppCoordinator: ObservableObject {
     }
     
     func navigateToTextGeneration() {
-        currentView = .textGeneration
+        navigationPath.append(ContentViewType.textGeneration)
     }
     
     func navigateToImageUpload() {
-        currentView = .imageUpload
+        navigationPath.append(ContentViewType.imageUpload)
     }
     
     func navigateToResults(for project: Project) {
         currentProject = project
-        currentView = .results
+        navigationPath.append(ContentViewType.results)
     }
     
     func navigateToDashboard() {
-        currentView = .dashboard
+        navigationPath = NavigationPath()
     }
     
     func navigateToProjectList() {
-        currentView = .projectList
+        navigationPath.append(ContentViewType.projectList)
+    }
+    
+    func navigateBack() {
+        if !navigationPath.isEmpty {
+            navigationPath.removeLast()
+        } else {
+            // If at root, ensure we're showing dashboard
+            navigationPath = NavigationPath()
+        }
     }
     
     func resetQuotaIfNeeded() {
@@ -47,7 +56,7 @@ class AppCoordinator: ObservableObject {
     }
 }
 
-enum ContentViewType: Equatable {
+enum ContentViewType: Hashable {
     case dashboard
     case textGeneration
     case imageUpload
@@ -55,8 +64,14 @@ enum ContentViewType: Equatable {
     case projectList
 }
 
+extension ContentViewType: CaseIterable {
+    static var allCases: [ContentViewType] {
+        return [.dashboard, .textGeneration, .imageUpload, .results]
+    }
+}
+
 // Data models
-class UserQuota: ObservableObject {
+class UserQuota {
     var dailyLimit: Int
     var usedToday: Int
     var resetTime: Date
@@ -76,12 +91,19 @@ class UserQuota: ObservableObject {
     }
     
     func canGenerate() -> Bool {
+        resetQuotaIfNeeded()
         return remaining > 0
     }
     
     func useGeneration() {
         if canGenerate() {
             usedToday += 1
+        }
+    }
+    
+    func resetQuotaIfNeeded() {
+        if Calendar.current.compare(Date(), to: resetTime, toGranularity: .day) == .orderedDescending {
+            usedToday = 0
         }
     }
 }
