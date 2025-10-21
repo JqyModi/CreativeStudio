@@ -18,25 +18,3 @@ struct CreativeStudioApp: App {
         }
     }
 }
-
-//struct AppNavigationView: View {
-//    @EnvironmentObject var appCoordinator: AppCoordinator
-//    
-//    var body: some View {
-//        NavigationStack(path: $appCoordinator.navigationStack) {
-//            DashboardView(viewModel: DashboardViewModel())
-//                .navigationDestination(for: ContentViewType.self) { destination in
-//                    switch destination {
-//                    case .dashboard:
-//                        DashboardView(viewModel: DashboardViewModel())
-//                    case .textGeneration:
-//                        TextGenerationView(viewModel: TextGenerationViewModel())
-//                    case .imageUpload:
-//                        ImageUploadView(viewModel: ImageUploadViewModel())
-//                    case .results:
-//                            ResultsView(project: Project(name: "dd"))
-//                    }
-//                }
-//        }
-//    }
-//}

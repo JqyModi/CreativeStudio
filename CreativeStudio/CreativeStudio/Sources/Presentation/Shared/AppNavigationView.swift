@@ -40,6 +40,7 @@ struct AppNavigationView: View {
                     }
                 }
         }
+        .tint(.white)
     }
 }
 
