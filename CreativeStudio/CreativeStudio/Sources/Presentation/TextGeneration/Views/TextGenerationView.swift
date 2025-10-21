@@ -163,12 +163,22 @@ struct TextGenerationView: View {
             // Generate button
             Button(action: {
                 if appCoordinator.userQuota.canGenerate() {
-                    viewModel.generateContent { project in
-                        // Update quota
-                        appCoordinator.userQuota.useGeneration()
-                        
-                        // Navigate to results
-                        appCoordinator.navigateToResults(for: project)
+                    let parameters = GenerationParams(
+                        style: selectedStyle,
+                        creativity: creativity,
+                        temperature: 0.7,
+                        length: 500
+                    )
+                    
+                    // Update the view model with the parameters or call an updated method
+                    Task {
+                        await viewModel.generateContentAsync(prompt: viewModel.inputText, parameters: parameters) { project in
+                            // Update quota
+                            appCoordinator.userQuota.useGeneration()
+                            
+                            // Navigate to results
+                            appCoordinator.navigateToResults(for: project)
+                        }
                     }
                 }
             }) {
@@ -260,23 +270,16 @@ class TextGenerationViewModel: ObservableObject {
         self.textGenerationUseCase = textGenerationUseCase
     }
     
-    func generateContent(completion: @escaping (Project) -> Void) {
-        Task {
-            await generateContentAsync(completion: completion)
-        }
-    }
-    
     @MainActor
-    private func generateContentAsync(completion: @escaping (Project) -> Void) async {
-        guard !inputText.isEmpty else { return }
+    func generateContentAsync(prompt: String, parameters: GenerationParams, completion: @escaping (Project) -> Void) async {
+        guard !prompt.isEmpty else { return }
         
         isGenerating = true
         progress = 0.0
         
         do {
             // Update progress during generation
-            let parameters = GenerationParams()
-            let generatedTexts = try await textGenerationUseCase.execute(prompt: inputText, parameters: parameters)
+            let generatedTexts = try await textGenerationUseCase.execute(prompt: prompt, parameters: parameters)
             
             // Update progress during the process
             for i in 1...10 {
@@ -286,12 +289,12 @@ class TextGenerationViewModel: ObservableObject {
             
             // Create a new project with the generated result
             let generationResult = GenerationResult(
-                prompt: inputText,
+                prompt: prompt,
                 texts: generatedTexts
             )
             
             let project = Project(
-                name: "文字生成项目 - \(inputText.prefix(20))...",
+                name: "文字生成项目 - \(prompt.prefix(20))...",
                 generationResults: [generationResult]
             )
             
