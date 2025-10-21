@@ -67,15 +67,146 @@ struct ResultsView: View {
                     }
                     .padding(.horizontal)
                     
-                    // Simple placeholder for tab content
+                    // Tab-specific content based on the project's generation results
                     VStack(spacing: 20) {
-                        Text("Result Content")
-                            .font(.title)
-                            .padding()
-                        
-                        Text("Selected tab: \(viewModel.selectedTab.title)")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                        switch viewModel.selectedTab {
+                        case .image:
+                            // Image results
+                            if let firstResult = project.generationResults.first,
+                               !firstResult.images.isEmpty {
+                                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2), spacing: 10) {
+                                    ForEach(0..<min(firstResult.images.count, 4), id: \.self) { index in
+                                        AsyncDataImage(data: firstResult.images[index])
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(maxWidth: .infinity, maxHeight: 200)
+                                            .clipped()
+                                            .cornerRadius(8)
+                                    }
+                                }
+                            } else {
+                                VStack {
+                                    Image(systemName: "photo")
+                                        .font(.largeTitle)
+                                        .foregroundColor(.gray)
+                                    Text("暂无图像结果")
+                                        .foregroundColor(.secondary)
+                                }
+                                .frame(maxHeight: 200)
+                            }
+                            
+                        case .text:
+                            // Text results
+                            if let firstResult = project.generationResults.first,
+                               !firstResult.texts.isEmpty {
+                                VStack(alignment: .leading, spacing: 15) {
+                                    ForEach(firstResult.texts.indices, id: \.self) { index in
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            Text("文案 \(index + 1)")
+                                                .font(.headline)
+                                                .foregroundColor(Color(red: 0.4, green: 0.498, blue: 0.918))
+                                            
+                                            Text(firstResult.texts[index])
+                                                .font(.body)
+                                                .multilineTextAlignment(.leading)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                        }
+                                        .padding()
+                                        .background(Color.white)
+                                        .cornerRadius(8)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(Color(red: 0.867, green: 0.867, blue: 0.867), lineWidth: 1)
+                                        )
+                                    }
+                                }
+                            } else {
+                                VStack {
+                                    Image(systemName: "doc.text")
+                                        .font(.largeTitle)
+                                        .foregroundColor(.gray)
+                                    Text("暂无文案结果")
+                                        .foregroundColor(.secondary)
+                                }
+                                .frame(maxHeight: 200)
+                            }
+                            
+                        case .combined:
+                            // Combined content - showing both text and images
+                            VStack(alignment: .leading, spacing: 15) {
+                                if let firstResult = project.generationResults.first {
+                                    // Show prompt
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("原始提示词")
+                                            .font(.headline)
+                                            .foregroundColor(Color(red: 0.4, green: 0.498, blue: 0.918))
+                                        
+                                        Text(firstResult.prompt)
+                                            .font(.body)
+                                            .multilineTextAlignment(.leading)
+                                    }
+                                    .padding()
+                                    .background(Color.white)
+                                    .cornerRadius(8)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color(red: 0.867, green: 0.867, blue: 0.867), lineWidth: 1)
+                                    )
+                                    
+                                    // Show generated texts
+                                    if !firstResult.texts.isEmpty {
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            Text("生成文案")
+                                                .font(.headline)
+                                                .foregroundColor(Color(red: 0.4, green: 0.498, blue: 0.918))
+                                            
+                                            ForEach(firstResult.texts.prefix(2), id: \.self) { text in
+                                                Text(text)
+                                                    .font(.body)
+                                                    .multilineTextAlignment(.leading)
+                                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                                    .padding()
+                                                    .background(Color.white)
+                                                    .cornerRadius(8)
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 8)
+                                                            .stroke(Color(red: 0.867, green: 0.867, blue: 0.867), lineWidth: 1)
+                                                    )
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Show generated images
+                                    if !firstResult.images.isEmpty {
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            Text("生成图像")
+                                                .font(.headline)
+                                                .foregroundColor(Color(red: 0.4, green: 0.498, blue: 0.918))
+                                            
+                                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2), spacing: 10) {
+                                                ForEach(0..<min(firstResult.images.count, 2), id: \.self) { index in
+                                                    AsyncDataImage(data: firstResult.images[index])
+                                                        .aspectRatio(contentMode: .fill)
+                                                        .frame(maxWidth: .infinity, maxHeight: 150)
+                                                        .clipped()
+                                                        .cornerRadius(8)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                        case .derived, .relatedText, .style:
+                            // For other tabs, show a message or future implementation
+                            VStack {
+                                Image(systemName: "rectangle.dashed")
+                                    .font(.largeTitle)
+                                    .foregroundColor(.gray)
+                                Text("此功能正在开发中")
+                                    .foregroundColor(.secondary)
+                            }
+                            .frame(maxHeight: 200)
+                        }
                     }
                     .padding(20)
                     .background(Color(red: 0.973, green: 0.973, blue: 0.98))
