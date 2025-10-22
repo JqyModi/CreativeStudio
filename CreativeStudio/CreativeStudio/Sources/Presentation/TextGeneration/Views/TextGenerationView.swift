@@ -167,7 +167,7 @@ struct TextGenerationView: View {
                         style: selectedStyle,
                         creativity: creativity,
                         temperature: 0.7,
-                        length: 500
+                        length: 5000
                     )
                     
                     Task {

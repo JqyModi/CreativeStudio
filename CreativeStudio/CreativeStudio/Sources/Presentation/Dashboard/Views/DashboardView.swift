@@ -101,7 +101,7 @@ struct DashboardView: View {
                         
                         CreationOptionCard(
                             icon: "🖼️",
-                            title: "图像上传",
+                            title: "图像生成",
                             action: { appCoordinator.navigateToImageUpload() }
                         )
                     }

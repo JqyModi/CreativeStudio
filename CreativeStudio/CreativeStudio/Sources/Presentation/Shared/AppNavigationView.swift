@@ -27,7 +27,7 @@ struct AppNavigationView: View {
                             .environmentObject(appCoordinator)
                     case .results:
                         if let project = appCoordinator.currentProject {
-                            ResultsView(project: project)
+                            ResultsViewV2(project: project)
                                 .environmentObject(appCoordinator)
                         } else {
                             // Fallback if no project is set
