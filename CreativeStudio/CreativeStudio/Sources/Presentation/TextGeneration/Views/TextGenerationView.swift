@@ -170,7 +170,6 @@ struct TextGenerationView: View {
                         length: 500
                     )
                     
-                    // Update the view model with the parameters or call an updated method
                     Task {
                         await viewModel.generateContentAsync(prompt: viewModel.inputText, parameters: parameters) { project in
                             // Update quota
@@ -303,6 +302,7 @@ class TextGenerationViewModel: ObservableObject {
             
         } catch {
             print("Error generating content: $error)")
+            // In a real implementation, we would show an error message to the user
         }
         
         isGenerating = false
